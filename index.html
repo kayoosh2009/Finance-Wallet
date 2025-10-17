@@ -1,13 +1,499 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lightning Wallet</title>
-  </head>
-  <body class="bg-gray-900 text-white">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Finance Tracker — Dark</title>
+<style>
+  :root{
+    --bg:#0b0f14;
+    --card:#0f1720;
+    --muted:#9aa6b2;
+    --accent:#7c5cff;
+    --accent-2:#00d4ff;
+    --glass: rgba(255,255,255,0.03);
+    --success:#2dd4bf;
+    --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background:linear-gradient(180deg,var(--bg),#061018 120%);
+    color:#e6eef6;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px;
+  }
+
+  .app {
+    width:100%;
+    max-width:980px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:14px;
+    box-shadow: 0 10px 30px rgba(3,7,12,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
+    overflow:hidden;
+    display:grid;
+    grid-template-columns: 360px 1fr;
+    gap:20px;
+    padding:22px;
+  }
+
+  /* left column (controls + balances) */
+  .panel {
+    background: linear-gradient(180deg, var(--card), rgba(255,255,255,0.01));
+    border-radius:12px;
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    min-height:320px;
+  }
+
+  h1{
+    margin:0 0 6px 0;
+    font-size:18px;
+    letter-spacing:0.2px;
+  }
+  .subtitle{color:var(--muted); font-size:13px; margin:0 0 14px 0;}
+
+  .balance-card {
+    background: linear-gradient(90deg, rgba(124,92,255,0.08), rgba(0,212,255,0.03));
+    padding:12px;
+    border-radius:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .total-label{font-size:13px;color:var(--muted)}
+  .total-amount{font-size:24px;font-weight:700;color:#fff}
+
+  .accounts {
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+    margin-top:6px;
+  }
+  .account {
+    background:var(--glass);
+    border-radius:10px;
+    padding:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .account:hover{transform:translateY(-4px)}
+  .account .name{font-size:14px}
+  .account .amount{font-weight:700}
+
+  .controls { display:flex; gap:10px; margin-top:8px; }
+  button.primary, button.ghost {
+    border:0;
+    padding:10px 12px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
+    color:#08121a;
+  }
+  button.primary{
+    background:linear-gradient(90deg,var(--accent),#6aa7ff);
+    color:white;
+    box-shadow: 0 6px 18px rgba(124,92,255,0.12);
+  }
+  button.ghost{
+    background:transparent;
+    color:var(--muted);
+    border:1px solid rgba(255,255,255,0.03);
+  }
+
+  /* right column (history + actions) */
+  .main {
+    background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+    border-radius:12px;
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+  }
+  .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
+  .search { background:var(--glass); padding:8px 10px; border-radius:10px; color:var(--muted); border:1px solid rgba(255,255,255,0.02)}
+  .history { overflow:auto; padding-right:6px; display:flex; flex-direction:column; gap:8px; }
+
+  .tx {
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:center;
+    padding:10px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.02);
+  }
+  .tx .left { display:flex; gap:12px; align-items:center;}
+  .badge {
+    min-width:42px; text-align:center; font-weight:700; padding:8px 12px;
+    border-radius:10px;
+  }
+  .badge.income{ background: linear-gradient(90deg, rgba(45,212,191,0.12), rgba(45,212,191,0.06)); color:var(--success);}
+  .badge.expense{ background: linear-gradient(90deg, rgba(255,107,107,0.08), rgba(255,107,107,0.03)); color:var(--danger); }
+
+  .meta { color:var(--muted); font-size:13px; }
+  .tx .right { font-weight:700; }
+
+  .small { font-size:12px; color:var(--muted) }
+
+  footer { margin-top:auto; color:var(--muted); font-size:13px; text-align:center }
+
+  /* modal */
+  .modal {
+    position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:40;
+  }
+  .modal.show{display:flex; background:linear-gradient(180deg, rgba(3,7,12,0.6), rgba(3,7,12,0.85));}
+  .modal-card { width:100%; max-width:520px; background:var(--card); border-radius:12px; padding:18px; box-shadow:0 30px 80px rgba(2,6,12,0.6) }
+  .row{display:flex; gap:10px; align-items:center}
+  label{display:block;font-size:13px;color:var(--muted); margin-bottom:6px}
+  input[type="number"], select, input[type="text"]{
+    width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.03);
+    background:transparent; color:inherit;
+  }
+
+  .flex {display:flex; gap:8px}
+  .muted { color:var(--muted); font-size:13px }
+  .small-btn { padding:8px 10px; border-radius:8px; border:0; cursor:pointer; }
+
+  /* responsive */
+  @media (max-width:880px){
+    .app{grid-template-columns:1fr; padding:14px}
+  }
+</style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Finance tracker">
+    <!-- left -->
+    <div class="panel" aria-hidden="false">
+      <div>
+        <h1>Finance Tracker</h1>
+        <p class="subtitle">Тёмная тема — быстрое учёство доходов/расходов. Данные хранятся в localStorage.</p>
+      </div>
+
+      <div class="balance-card" aria-live="polite">
+        <div>
+          <div class="total-label">Общий баланс</div>
+          <div class="total-amount" id="totalAmount">₪0.00</div>
+        </div>
+        <div style="text-align:right">
+          <div class="small muted">Последнее обновление</div>
+          <div id="lastUpdated" class="small">—</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="accounts" id="accountsList" aria-live="polite">
+          <!-- accounts generated by JS -->
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="primary" id="addIncomeBtn">Ввести доход</button>
+        <button class="ghost" id="addExpenseBtn">Ввести расход</button>
+      </div>
+
+      <div style="margin-top:8px; display:flex; gap:8px; align-items:center">
+        <button class="ghost small-btn" id="exportBtn">Экспорт (JSON)</button>
+        <button class="ghost small-btn" id="importBtn">Импорт</button>
+        <button class="ghost small-btn" id="resetBtn" title="Сбросить все данные">Сброс</button>
+      </div>
+
+      <footer>LocalStorage • Накопления: 50 / 30 / 20</footer>
+    </div>
+
+    <!-- right -->
+    <div class="main">
+      <div class="toolbar">
+        <div>
+          <div style="font-weight:700">История транзакций</div>
+          <div class="small muted">Последние движения по счёту</div>
+        </div>
+        <div class="small muted">Всего операций: <span id="txCount">0</span></div>
+      </div>
+
+      <div class="history" id="historyList" role="list" aria-live="polite">
+        <!-- transactions -->
+      </div>
+    </div>
+  </div>
+
+  <!-- modal -->
+  <div class="modal" id="modal">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div id="modalTitle" style="font-weight:700">Modal</div>
+          <div class="muted small" id="modalSubtitle">subtitle</div>
+        </div>
+        <div>
+          <button class="ghost small-btn" id="modalClose">Закрыть</button>
+        </div>
+      </div>
+
+      <div id="modalBody">
+        <!-- dynamic form -->
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:12px;gap:8px">
+        <button class="ghost" id="modalCancel">Отмена</button>
+        <button class="primary" id="modalSave">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/*
+  Finance Tracker (single page)
+  - accounts: wallet (50%), card (30%), savings (20%)
+  - localStorage key: ft_data_v1
+  - income: split automatically and creates income tx + 3 deposits
+  - expense: choose account, validate funds
+  - export/import/reset
+*/
+
+const STORAGE_KEY = 'ft_data_v1';
+
+const defaultState = {
+  accounts: {
+    wallet: {name:'Кошелёк', balance:0, code:'wallet'},
+    card:   {name:'Карта', balance:0, code:'card'},
+    saving: {name:'Накопление', balance:0, code:'saving'}
+  },
+  transactions: [], // {id, type: 'income'|'expense'|'transfer', account, amount, note, ts}
+  updatedAt: null
+};
+
+let state = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){
+    console.error('load error', e);
+  }
+  return JSON.parse(JSON.stringify(defaultState));
+}
+
+function saveState(){
+  state.updatedAt = new Date().toISOString();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  render();
+}
+
+/* --- helpers --- */
+function fmt(n){
+  return '₪' + Number(n || 0).toLocaleString('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function now(){ return new Date().toISOString(); }
+
+/* --- UI rendering --- */
+function render(){
+  // total
+  const accounts = state.accounts;
+  const total = Object.values(accounts).reduce((s,a)=>s + Number(a.balance||0), 0);
+  document.getElementById('totalAmount').textContent = fmt(total);
+  document.getElementById('lastUpdated').textContent = state.updatedAt ? (new Date(state.updatedAt)).toLocaleString() : '—';
+
+  // accounts list
+  const accountsList = document.getElementById('accountsList');
+  accountsList.innerHTML = '';
+  Object.values(accounts).forEach(acc=>{
+    const el = document.createElement('div');
+    el.className = 'account';
+    el.innerHTML = `<div>
+      <div class="name">${escapeHtml(acc.name)}</div>
+      <div class="small muted">Счёт: ${escapeHtml(acc.code)}</div>
+    </div>
+    <div class="amount">${fmt(acc.balance)}</div>`;
+    accountsList.appendChild(el);
+  });
+
+  // history
+  const hist = document.getElementById('historyList');
+  hist.innerHTML = '';
+  const txs = state.transactions.slice().reverse();
+  document.getElementById('txCount').textContent = txs.length;
+  if(txs.length===0){
+    const msg = document.createElement('div');
+    msg.className='muted small'; msg.textContent = 'История пуста — добавьте доход или расход.';
+    hist.appendChild(msg);
+  } else {
+    txs.forEach(tx=>{
+      const row = document.createElement('div');
+      row.className = 'tx';
+      const left = document.createElement('div'); left.className='left';
+      const badge = document.createElement('div'); badge.className = 'badge ' + (tx.type==='income'?'income':'expense');
+      badge.textContent = tx.type==='income'?'+':'-';
+      const meta = document.createElement('div'); meta.innerHTML = `<div style="font-weight:700">${escapeHtml(tx.note||tx.type)}</div>
+        <div class="meta">${escapeHtml(state.accounts[tx.account].name)} · ${new Date(tx.ts).toLocaleString()}</div>`;
+      left.appendChild(badge); left.appendChild(meta);
+      const right = document.createElement('div'); right.className='right';
+      right.textContent = (tx.type==='income'? '+' : '-') + fmt(tx.amount);
+      row.appendChild(left); row.appendChild(right);
+      hist.appendChild(row);
+    });
+  }
+}
+
+/* escape helper */
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+
+/* --- Transactions --- */
+function addIncome(amount, note){
+  const a = Number(amount) || 0;
+  if(a <= 0) return alert('Сумма должна быть больше 0.');
+  // split 50/30/20
+  const w = roundTo2(a * 0.50);
+  const c = roundTo2(a * 0.30);
+  const s = roundTo2(a - w - c); // remainder to ensure sum equals amount
+  // update accounts
+  state.accounts.wallet.balance = roundTo2(Number(state.accounts.wallet.balance) + w);
+  state.accounts.card.balance   = roundTo2(Number(state.accounts.card.balance) + c);
+  state.accounts.saving.balance = roundTo2(Number(state.accounts.saving.balance) + s);
+  // create transactions: main income and three deposits
+  state.transactions.push({ id: uid(), type:'income', account:'wallet', amount:w, note: (note||'Доход (50%)'), ts: now() });
+  state.transactions.push({ id: uid(), type:'income', account:'card', amount:c, note: (note||'Доход (30%)'), ts: now() });
+  state.transactions.push({ id: uid(), type:'income', account:'saving', amount:s, note: (note||'Доход (20%)'), ts: now() });
+  saveState();
+}
+
+function addExpense(accountCode, amount, note){
+  const a = Number(amount) || 0;
+  if(a <= 0) return alert('Сумма должна быть больше 0.');
+  const acc = state.accounts[accountCode];
+  if(!acc) return alert('Выберите счёт.');
+  if(Number(acc.balance) < a) return alert('На выбранном счёте недостаточно средств.');
+  acc.balance = roundTo2(Number(acc.balance) - a);
+  state.transactions.push({ id: uid(), type:'expense', account:accountCode, amount:a, note: note || 'Расход', ts: now() });
+  saveState();
+}
+
+function roundTo2(n){ return Math.round((Number(n) + Number.EPSILON) * 100) / 100; }
+
+/* --- UI modals & events --- */
+const modal = document.getElementById('modal');
+const modalTitle = document.getElementById('modalTitle');
+const modalSubtitle = document.getElementById('modalSubtitle');
+const modalBody = document.getElementById('modalBody');
+const modalSave = document.getElementById('modalSave');
+const modalCancel = document.getElementById('modalCancel');
+const modalClose = document.getElementById('modalClose');
+
+function openIncomeModal(){
+  modalTitle.textContent = 'Добавить доход';
+  modalSubtitle.textContent = 'Сумма разделится: 50% кошелёк, 30% карта, 20% накопления';
+  modalBody.innerHTML = `
+    <label>Сумма (₪)</label>
+    <input id="m_amount" type="number" min="0" step="0.01" placeholder="Например 1000" />
+    <label>Примечание (необязательно)</label>
+    <input id="m_note" type="text" placeholder="Например зарплата" />
+  `;
+  modalSave.onclick = () => {
+    const v = Number(document.getElementById('m_amount').value);
+    const note = document.getElementById('m_note').value;
+    if(!v || v<=0){ alert('Введите корректную сумму'); return; }
+    addIncome(v, note);
+    closeModal();
+  };
+  showModal();
+}
+
+function openExpenseModal(){
+  modalTitle.textContent = 'Добавить расход';
+  modalSubtitle.textContent = 'Выберите счёт и сумму';
+  modalBody.innerHTML = `
+    <label>Счёт</label>
+    <select id="m_account">
+      <option value="wallet">Кошелёк</option>
+      <option value="card">Карта</option>
+      <option value="saving">Накопление</option>
+    </select>
+    <label>Сумма (₪)</label>
+    <input id="m_amount" type="number" min="0" step="0.01" placeholder="Например 250" />
+    <label>Примечание (необязательно)</label>
+    <input id="m_note" type="text" placeholder="Например кофе" />
+  `;
+  modalSave.onclick = () => {
+    const acc = document.getElementById('m_account').value;
+    const v = Number(document.getElementById('m_amount').value);
+    const note = document.getElementById('m_note').value;
+    if(!v || v<=0){ alert('Введите корректную сумму'); return; }
+    addExpense(acc, v, note);
+    closeModal();
+  };
+  showModal();
+}
+
+function showModal(){
+  modal.classList.add('show');
+  setTimeout(()=> {
+    const input = modal.querySelector('input,select');
+    if(input) input.focus();
+  },100);
+}
+function closeModal(){
+  modal.classList.remove('show');
+}
+
+document.getElementById('addIncomeBtn').addEventListener('click', openIncomeModal);
+document.getElementById('addExpenseBtn').addEventListener('click', openExpenseModal);
+modalCancel.addEventListener('click', closeModal);
+modalClose.addEventListener('click', closeModal);
+window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+
+/* export/import/reset */
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'finance_export.json'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('importBtn').addEventListener('click', ()=>{
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='application/json';
+  inp.onchange = ()=>{
+    const f = inp.files[0];
+    if(!f) return;
+    const r = new FileReader();
+    r.onload = e=> {
+      try{
+        const parsed = JSON.parse(e.target.result);
+        if(parsed.accounts && parsed.transactions){
+          state = parsed;
+          saveState();
+          alert('Импорт успешно выполнен.');
+        } else alert('Неверный формат файла.');
+      }catch(err){ alert('Ошибка при чтении файла'); console.error(err); }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(confirm('Сбросить данные и очистить локальное хранилище?')) {
+    state = JSON.parse(JSON.stringify(defaultState));
+    saveState();
+  }
+});
+
+/* initial render */
+render();
+</script>
+</body>
 </html>
