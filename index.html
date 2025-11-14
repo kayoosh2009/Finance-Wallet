@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Финансовый Трекер с Аналитикой 🌙</title>
+    <title>Финансовый Трекер 3.0: Светлая Тема ☀️</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        /* --- Темная Тема и Базовые Стили --- */
+        /* --- СТИЛИ: СВЕТЛАЯ ТЕМА И БАЗА --- */
         :root {
-            --bg-primary: #121212;
-            --bg-secondary: #1e1e1e;
-            --text-primary: #ffffff;
-            --text-secondary: #bbbbbb;
+            /* Инвертированные цвета */
+            --bg-primary: #f8f8f8; /* Светлый фон */
+            --bg-secondary: #ffffff; /* Белые карточки */
+            --text-primary: #212529; /* Темный текст */
+            --text-secondary: #6c757d; /* Серый текст для деталей */
             --accent-blue: #007bff;
             --accent-green: #28a745;
             --accent-red: #dc3545;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            --border-color: #333333;
-            --nav-height: 60px; /* Высота навигационной панели */
+            --accent-yellow: #ffc107;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Легкая тень */
+            --border-color: #e9ecef; /* Светлая граница */
+            --nav-height: 60px;
         }
 
         body {
@@ -32,8 +34,7 @@
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            /* Важный фикс: добавляем отступ, равный высоте навигации */
-            padding-bottom: calc(20px + var(--nav-height)); 
+            padding-bottom: calc(20px + var(--nav-height));
         }
         header {
             background-color: var(--bg-secondary);
@@ -44,11 +45,9 @@
             position: sticky;
             top: 0;
             z-index: 10;
+            border-bottom: 1px solid var(--border-color);
         }
-        h1, h2, h3 {
-            margin: 0;
-            font-size: 1.5em;
-        }
+        h1, h2, h3 { margin: 0; font-size: 1.5em; }
 
         /* --- Карточки и Сводка --- */
         .section-card {
@@ -57,182 +56,106 @@
             border-radius: 12px;
             box-shadow: var(--shadow);
             margin-top: 20px;
+            border: 1px solid var(--border-color);
         }
-        .total-balance-wrapper {
-            text-align: center;
-            cursor: pointer;
-        }
+        .total-balance-wrapper { text-align: center; cursor: pointer; }
         #total-balance {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-bottom: 5px;
+            font-size: 2.5em; font-weight: bold; margin-bottom: 5px;
             color: var(--accent-green);
-            transition: color 0.3s;
         }
-        #current-view-currency {
-            font-size: 0.9em;
-            color: var(--text-secondary);
-        }
-
-        /* --- Элементы Управления --- */
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
+        .controls { display: flex; gap: 10px; margin-top: 15px; }
         .control-btn {
-            background-color: var(--accent-blue);
-            color: var(--text-primary);
-            border: none;
-            padding: 12px 0;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1em;
-            flex-grow: 1;
-            transition: background-color 0.3s;
+            color: white; /* Текст на кнопках действий остается белым */
+            border: none; padding: 12px 0; border-radius: 8px; cursor: pointer;
+            font-size: 1em; flex-grow: 1; transition: background-color 0.3s;
         }
+        .control-btn:not(.transfer) { background-color: var(--accent-blue); }
         .control-btn.expense { background-color: var(--accent-red); }
-        .control-btn.transfer { background-color: #ffc107; color: #333; }
-        .control-btn.secondary { background-color: #4a4a4a; }
-        .control-btn:hover { filter: brightness(1.2); }
+        .control-btn.transfer { background-color: var(--accent-yellow); color: #212529; /* Темный текст на желтом */ }
+        .control-btn.secondary { background-color: #e9ecef; color: var(--text-primary); /* Светлая кнопка */ }
+        .control-btn:hover { filter: brightness(0.95); }
         
-        /* --- Списки Счетов и Аналитики --- */
-        .account-list {
-            list-style: none;
-            padding: 0;
-            margin-top: 15px;
+        /* --- Списки Счетов и Транзакций --- */
+        .account-list, .transaction-list { list-style: none; padding: 0; margin-top: 15px; }
+        .account-item, .transaction-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 0; border-bottom: 1px solid var(--border-color);
         }
-        .account-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .account-item:last-child { border-bottom: none; }
+        .transaction-item:last-child, .account-item:last-child { border-bottom: none; }
+        .transaction-details { font-size: 0.9em; color: var(--text-secondary); text-align: right; }
+        .transaction-amount { font-weight: bold; margin-left: 10px; }
+        .income { color: var(--accent-green); }
+        .expense { color: var(--accent-red); }
+        .transfer { color: var(--accent-yellow); }
         
-        /* --- Графики --- */
-        .chart-container {
-            position: relative;
-            height: 300px;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-
-        /* --- МОДАЛЬНОЕ ОКНО: ВОССТАНОВЛЕННЫЕ СТИЛИ --- */
+        /* --- МОДАЛЬНОЕ ОКНО (Modal) --- */
         .modal {
-            display: none;
-            position: fixed;
-            z-index: 20;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.7);
+            display: none; position: fixed; z-index: 20; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.5); /* Фон остается темным для контраста */
         }
         .modal-content {
             background-color: var(--bg-secondary);
-            margin: 10% auto;
-            padding: 20px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: var(--shadow);
-        }
-        .close-btn {
-            color: var(--text-secondary);
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-        .close-btn:hover, .close-btn:focus {
-            color: var(--text-primary);
-            text-decoration: none;
-            cursor: pointer;
-        }
-        .modal-content input, .modal-content select {
-            width: 100%;
-            padding: 10px;
-            margin: 8px 0 16px 0;
-            display: inline-block;
+            margin: 10% auto; padding: 20px; border-radius: 12px;
+            width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
             border: 1px solid var(--border-color);
-            border-radius: 4px;
-            box-sizing: border-box;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
+        }
+        /* Стили для полей ввода в модальном окне */
+        .modal-content input, .modal-content select, .modal-content textarea {
+            width: 100%; padding: 10px; margin: 8px 0 16px 0;
+            border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box;
+            background-color: var(--bg-primary); /* Поля светлые */
+            color: var(--text-primary); /* Текст темный */
+        }
+        .modal-content select option {
+             background-color: var(--bg-primary); 
+             color: var(--text-primary);
         }
         .modal-content button {
-            width: 100%;
-            background-color: var(--accent-green);
-            color: white;
-            padding: 14px 20px;
-            margin: 8px 0;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1em;
+            width: 100%; background-color: var(--accent-blue); color: white;
+            padding: 14px 20px; margin: 8px 0; border: none; border-radius: 4px;
+            cursor: pointer; font-size: 1em;
         }
-        .modal-content button.cancel {
-            background-color: #6c757d;
-        }
+        .modal-content button.cancel { background-color: #6c757d; color: white; }
         
-        /* Стили для управления счетами */
-        .manage-account-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border-color);
+        /* --- Бюджетный Прогресс --- */
+        .budget-progress-bar {
+            width: 100%; height: 10px; background-color: var(--border-color);
+            border-radius: 5px; margin-top: 5px; overflow: hidden;
         }
-        .delete-btn {
-            background-color: var(--accent-red);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
+        .progress-fill {
+            height: 100%; transition: width 0.5s;
+            background-color: var(--accent-green);
         }
+        .overspent { background-color: var(--accent-red) !important; }
 
-
-        /* --- Исправленная Мобильная Навигация --- */
+        /* --- Навигация --- */
         nav {
-            display: flex;
-            justify-content: space-around;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            height: var(--nav-height);
+            display: flex; justify-content: space-around; position: fixed;
+            bottom: 0; left: 0; right: 0; width: 100%; height: var(--nav-height);
             background-color: var(--bg-secondary);
-            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.4);
-            padding: 0;
-            z-index: 100;
-            align-items: center;
+            box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+            border-top: 1px solid var(--border-color);
+            z-index: 100; align-items: center;
         }
         .nav-item {
-            cursor: pointer;
-            padding: 5px 10px;
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.8em;
-            transition: color 0.3s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
+            cursor: pointer; padding: 5px 10px; text-align: center;
+            color: var(--text-secondary); /* Серый в неактивном состоянии */
+            font-size: 0.8em; transition: color 0.3s;
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
         }
-        .nav-item.active {
-            color: var(--accent-blue);
-        }
+        .nav-item.active { color: var(--accent-blue); }
         
+        /* Стиль для кнопки очистки */
+        .clear-data-btn {
+            background-color: var(--accent-red) !important;
+            margin-top: 20px !important;
+            color: white !important;
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>💵 Финансовый Трекер</h1>
+        <h1>💵 Финансовый Трекер 3.0</h1>
     </header>
 
     <div class="container" id="main-view">
@@ -255,24 +178,22 @@
         
     </div>
 
-    <div class="container" id="manage-view" style="display: none;">
-         <section class="section-card">
-            <h2>⚙️ Управление Счетами</h2>
-            <ul id="manage-account-list" class="account-list"></ul>
-            <button class="control-btn secondary" onclick="addAccount()" style="margin-top: 10px;">➕ Добавить Новый Счет</button>
-         </section>
-    </div>
-
-
     <div class="container" id="analytics-view" style="display: none;">
         <section class="section-card">
             <h2>📈 Сводка за Месяц</h2>
             <div id="analytics-content">
-                <div class="account-item"><span>Всего Доходов:</span> <span id="total-income" style="color: var(--accent-green);">0.00</span></div>
-                <div class="account-item"><span>Всего Расходов:</span> <span id="total-expense" style="color: var(--accent-red);">0.00</span></div>
+                <div class="account-item"><span>Всего Доходов:</span> <span id="total-income" class="income">0.00</span></div>
+                <div class="account-item"><span>Всего Расходов:</span> <span id="total-expense" class="expense">0.00</span></div>
                 <div class="account-item" style="border-bottom: none;"><span>Чистый Доход:</span> <span id="net-balance">0.00</span></div>
             </div>
             <p style="margin-top: 15px; color: var(--text-secondary);">Все в: <span id="analytic-currency-code">RUB</span></p>
+        </section>
+
+        <section class="section-card">
+            <h2>💰 Бюджеты (Текущий Месяц)</h2>
+            <div id="budget-summary">
+                <p style="color: var(--text-secondary); text-align: center;">Необходимо настроить бюджеты в разделе "Управление".</p>
+            </div>
         </section>
         
         <section class="section-card">
@@ -289,13 +210,42 @@
             </div>
         </section>
     </div>
+    
+    <div class="container" id="history-view" style="display: none;">
+        <section class="section-card">
+            <h2>⏳ Журнал Транзакций</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9em;">Последние 20 операций</p>
+            <ul id="transaction-history-list" class="transaction-list"></ul>
+        </section>
+    </div>
+
+    <div class="container" id="manage-view" style="display: none;">
+         <section class="section-card">
+            <h2>⚙️ Управление Счетами</h2>
+            <ul id="manage-account-list" class="account-list"></ul>
+            <button class="control-btn secondary" onclick="addAccount()" style="margin-top: 10px;">➕ Добавить Новый Счет</button>
+         </section>
+
+         <section class="section-card">
+            <h2>💰 Настройка Бюджетов (₽)</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9em;">Установите месячные лимиты (в RUB).</p>
+            <div id="manage-budgets-list"></div>
+            <button class="control-btn secondary" onclick="saveBudgets()" style="margin-top: 10px;">💾 Сохранить Бюджеты</button>
+         </section>
+         
+         <section class="section-card">
+            <h2>🚨 Сброс Данных</h2>
+            <button class="control-btn clear-data-btn" onclick="clearAllData()">💥 Очистить Все Данные</button>
+         </section>
+    </div>
+
 
     <div id="transactionModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">&times;</span>
             <h3 id="modal-title">Добавить Транзакцию</h3>
 
-            <label for="account-select">Счет</label>
+            <label for="account-select">Счет Отправитель / Пополнения</label>
             <select id="account-select" required></select>
 
             <div id="transfer-target" style="display: none;">
@@ -316,14 +266,17 @@
             <div id="category-select-wrapper">
                 <label for="category-select">Категория</label>
                 <select id="category-select">
-                    <option value="Зарплата">Зарплата</option>
-                    <option value="Покупки">Покупки</option>
-                    <option value="Еда">Еда</option>
-                    <option value="Коммунальные">Коммунальные</option>
-                    <option value="Развлечения">Развлечения</option>
-                    <option value="Прочее">Прочее</option>
+                    <option value="Зарплата">Зарплата (Д)</option>
+                    <option value="Покупки">Покупки (Р)</option>
+                    <option value="Еда">Еда (Р)</option>
+                    <option value="Коммунальные">Коммунальные (Р)</option>
+                    <option value="Развлечения">Развлечения (Р)</option>
+                    <option value="Прочее">Прочее (Р)</option>
                 </select>
             </div>
+
+            <label for="description-input">Описание (необязательно)</label>
+            <input type="text" id="description-input" maxlength="50">
 
             <button id="submit-transaction-btn">Добавить</button>
             <button class="cancel" onclick="closeModal()">Отмена</button>
@@ -333,17 +286,23 @@
     <nav>
         <div class="nav-item active" onclick="showView('main-view', this)">🏠 Счета</div>
         <div class="nav-item" onclick="showView('analytics-view', this)">📈 Аналитика</div>
+        <div class="nav-item" onclick="showView('history-view', this)">📜 История</div>
         <div class="nav-item" onclick="showView('manage-view', this)">⚙️ Управление</div>
     </nav>
 
     <script>
         // --- Настройки и Хранение Данных ---
-        const LOCAL_STORAGE_KEY = 'financeTrackerDataV2';
+        const LOCAL_STORAGE_KEY = 'financeTrackerDataV3';
         const AVAILABLE_CURRENCIES = ['RUB', 'ILS', 'USD'];
         
         let state = {
             accounts: [],
             transactions: [],
+            budgets: {
+                'Покупки': 10000,
+                'Еда': 15000,
+                'Коммунальные': 5000
+            }, // Бюджеты по умолчанию в RUB
             viewCurrencyIndex: 0
         };
         
@@ -367,41 +326,45 @@
 
         function convertCurrency(amount, fromCurrency, toCurrency) {
             if (fromCurrency === toCurrency) return amount;
-            if (!exchangeRates[fromCurrency] || !exchangeRates[toCurrency]) return 0;
+            if (!exchangeRates[fromCurrency] || !exchangeRates[toCurrency]) return amount * (exchangeRates[fromCurrency] / exchangeRates[toCurrency]);
             
             const amountInBase = amount * exchangeRates[fromCurrency];
             return amountInBase / exchangeRates[toCurrency];
         }
 
-        function formatCurrency(amount, currencyCode) {
-            return `${amount.toFixed(2)} ${getSymbol(currencyCode)}`;
+        function formatCurrency(amount, currencyCode, hideSymbol = false) {
+            const formatted = amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " "); // Разделитель тысяч
+            return hideSymbol ? formatted : `${formatted} ${getSymbol(currencyCode)}`;
         }
         
         // --- Хранение Данных ---
         function loadState() {
             const data = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (data) {
-                state = JSON.parse(data);
+                const loadedState = JSON.parse(data);
+                state = { ...state, ...loadedState }; 
             }
+            // Инициализация тестовых данных, если Local Storage пуст
             if (state.accounts.length === 0) initializeDefaultAccounts();
             
             renderAll();
         }
 
         function initializeDefaultAccounts() {
-            state.accounts = [
-                { id: 1, name: 'Карта Основная', balance: 5000, currency: 'RUB' },
-                { id: 2, name: 'Сбережения', balance: 12500, currency: 'ILS' },
-            ];
-            // Добавим несколько тестовых транзакций для графиков
             const now = Date.now();
             const oneMonth = 30 * 24 * 3600 * 1000;
+            
+            state.accounts = [
+                { id: 1, name: 'Карта Основная', balance: 50000, currency: 'RUB' },
+                { id: 2, name: 'Сбережения', balance: 1250, currency: 'USD' },
+            ];
             state.transactions = [
-                { id: 1, type: 'income', amount: 30000, currency: 'RUB', accountId: 1, category: 'Доход', timestamp: now - (2 * oneMonth) }, // 2 месяца назад
-                { id: 2, type: 'expense', amount: 5000, currency: 'RUB', accountId: 1, category: 'Еда', timestamp: now - (2 * oneMonth) },
-                { id: 3, type: 'income', amount: 35000, currency: 'RUB', accountId: 1, category: 'Доход', timestamp: now - oneMonth/2 }, // Этот месяц
-                { id: 4, type: 'expense', amount: 15000, currency: 'RUB', accountId: 1, category: 'Покупки', timestamp: now - oneMonth/2 },
-                { id: 5, type: 'expense', amount: 7000, currency: 'RUB', accountId: 1, category: 'Коммунальные', timestamp: now - oneMonth/3 },
+                { id: 1, type: 'income', amount: 30000, currency: 'RUB', accountId: 1, category: 'Зарплата', description: 'Основная ЗП', timestamp: now - (2 * oneMonth) },
+                { id: 2, type: 'expense', amount: 5000, currency: 'RUB', accountId: 1, category: 'Еда', description: 'Продукты', timestamp: now - (2 * oneMonth) },
+                { id: 3, type: 'income', amount: 35000, currency: 'RUB', accountId: 1, category: 'Зарплата', description: 'ЗП за текущий мес', timestamp: now - oneMonth/2 },
+                { id: 4, type: 'expense', amount: 15000, currency: 'RUB', accountId: 1, category: 'Покупки', description: 'Ноутбук', timestamp: now - oneMonth/2 },
+                { id: 5, type: 'expense', amount: 7000, currency: 'RUB', accountId: 1, category: 'Коммунальные', description: 'Квартплата', timestamp: now - oneMonth/3 },
+                { id: 6, type: 'expense', amount: 100, currency: 'USD', accountId: 2, category: 'Развлечения', description: 'Подписка Netflix', timestamp: now - oneMonth/4 },
             ];
             state.viewCurrencyIndex = 0;
             saveState();
@@ -409,6 +372,15 @@
 
         function saveState() {
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+        }
+        
+        // --- Новая функция для очистки данных ---
+        function clearAllData() {
+            if (confirm("ВНИМАНИЕ! Вы уверены, что хотите удалить ВСЕ данные (счета, транзакции, бюджеты)? Это действие необратимо.")) {
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+                alert("Все данные удалены. Приложение будет перезагружено.");
+                window.location.reload(); // Перезагружаем страницу для инициализации с нуля
+            }
         }
         
         // --- Управление Валютой Обзора ---
@@ -422,75 +394,120 @@
             }
         }
 
-        // --- Рендеринг и Аналитика ---
+        // --- Аналитика: Сбор Данных ---
         
-        function getMonthlyNetBalance(targetCurrency) {
-            const monthlyData = {}; // Ключ: 'Год-Месяц'
-
-            state.transactions.forEach(t => {
-                if (t.type === 'transfer') return;
-                
-                const date = new Date(t.timestamp);
-                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                
-                if (!monthlyData[monthKey]) {
-                    monthlyData[monthKey] = { income: 0, expense: 0 };
-                }
-
-                const convertedAmount = convertCurrency(t.amount, t.currency, targetCurrency);
-
-                if (t.type === 'income') {
-                    monthlyData[monthKey].income += convertedAmount;
-                } else if (t.type === 'expense') {
-                    monthlyData[monthKey].expense += convertedAmount;
-                }
-            });
+        function getMonthlyAnalytics(targetCurrency) {
+            const monthlyData = {};
+            const categoryExpenses = {};
             
-            return monthlyData;
-        }
-
-        function renderAnalytics() {
-            const targetCurrency = AVAILABLE_CURRENCIES[state.viewCurrencyIndex];
             const now = new Date();
             const currentYear = now.getFullYear();
             const currentMonth = now.getMonth();
-            
-            let totalIncome = 0;
-            let totalExpense = 0;
-            const categoryExpenses = {};
-            
-            const currentMonthTransactions = state.transactions.filter(t => {
-                const date = new Date(t.timestamp);
-                return date.getFullYear() === currentYear && date.getMonth() === currentMonth && t.type !== 'transfer';
-            });
 
-            currentMonthTransactions.forEach(t => {
-                const convertedAmount = convertCurrency(t.amount, t.currency, targetCurrency);
+            state.transactions.forEach(t => {
+                // 1. Для графиков и годовой сводки (чистый доход)
+                if (t.type !== 'transfer') {
+                    const date = new Date(t.timestamp);
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                     
-                if (t.type === 'income') {
-                    totalIncome += convertedAmount;
-                } else if (t.type === 'expense') {
-                    totalExpense += convertedAmount;
-                    categoryExpenses[t.category] = (categoryExpenses[t.category] || 0) + convertedAmount;
+                    if (!monthlyData[monthKey]) {
+                        monthlyData[monthKey] = { income: 0, expense: 0 };
+                    }
+                    const convertedAmount = convertCurrency(t.amount, t.currency, targetCurrency);
+                    
+                    if (t.type === 'income') {
+                        monthlyData[monthKey].income += convertedAmount;
+                    } else if (t.type === 'expense') {
+                        monthlyData[monthKey].expense += convertedAmount;
+                    }
+
+                    // 2. Для текущего месяца (сводка и круговая диаграмма)
+                    if (date.getFullYear() === currentYear && date.getMonth() === currentMonth && t.type === 'expense') {
+                        // Конвертируем расход в целевую валюту (для графика)
+                        categoryExpenses[t.category] = (categoryExpenses[t.category] || 0) + convertedAmount;
+                    }
                 }
             });
+            
+            // 3. Сводка за текущий месяц (в целевой валюте)
+            const currentMonthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            const currentSummary = monthlyData[currentMonthKey] || { income: 0, expense: 0 };
+            
+            return { monthlyData, categoryExpenses, currentSummary };
+        }
 
+        // --- Рендеринг Аналитики ---
+
+        function renderAnalytics() {
+            const targetCurrency = AVAILABLE_CURRENCIES[state.viewCurrencyIndex];
+            const { monthlyData, categoryExpenses, currentSummary } = getMonthlyAnalytics(targetCurrency);
+            
+            const totalIncome = currentSummary.income;
+            const totalExpense = currentSummary.expense;
             const netBalance = totalIncome - totalExpense;
 
+            // Рендеринг Сводки
             document.getElementById('analytic-currency-code').textContent = targetCurrency;
             document.getElementById('total-income').textContent = formatCurrency(totalIncome, targetCurrency);
             document.getElementById('total-expense').textContent = formatCurrency(totalExpense, targetCurrency);
             document.getElementById('net-balance').textContent = formatCurrency(netBalance, targetCurrency);
-            
             document.getElementById('net-balance').style.color = netBalance < 0 ? 'var(--accent-red)' : 'var(--accent-green)';
             
-            renderCharts(targetCurrency, categoryExpenses);
+            // Рендеринг Бюджетов
+            renderBudgetsSummary(targetCurrency, categoryExpenses);
+
+            // Обновление графиков
+            renderCharts(targetCurrency, monthlyData, categoryExpenses);
         }
 
-        function renderCharts(targetCurrency, categoryExpenses) {
-            
+        function renderBudgetsSummary(targetCurrency, currentMonthExpenses) {
+            const budgetDiv = document.getElementById('budget-summary');
+            const targetBudgetCurrency = 'RUB'; // Наш бюджет всегда в RUB
+
+            let html = '';
+            let hasBudgets = false;
+
+            // Нам нужно знать, сколько потрачено в RUB, т.к. бюджеты в RUB
+            const rubExpenses = getMonthlyAnalytics(targetBudgetCurrency).categoryExpenses;
+
+            for (const category in state.budgets) {
+                if (state.budgets[category] > 0) {
+                    hasBudgets = true;
+                    const limit = state.budgets[category];
+                    const spent = rubExpenses[category] || 0;
+                    const remaining = limit - spent;
+                    const percentage = Math.min((spent / limit) * 100, 100);
+                    const overspent = spent > limit;
+
+                    html += `
+                        <div class="account-item">
+                            <span style="font-weight: bold;">${category}</span>
+                            <span class="${overspent ? 'expense' : 'income'}">
+                                ${formatCurrency(spent, targetBudgetCurrency)} / ${formatCurrency(limit, targetBudgetCurrency)}
+                            </span>
+                        </div>
+                        <div class="budget-progress-bar">
+                            <div class="progress-fill ${overspent ? 'overspent' : ''}" 
+                                 style="width: ${percentage}%;"></div>
+                        </div>
+                        <p style="font-size: 0.8em; margin-bottom: 10px; color: ${overspent ? 'var(--accent-red)' : 'var(--text-secondary)'};">
+                            ${overspent ? 'Перерасход: ' : 'Осталось: '} 
+                            ${formatCurrency(Math.abs(remaining), targetBudgetCurrency)}
+                        </p>
+                    `;
+                }
+            }
+
+            if (!hasBudgets) {
+                 budgetDiv.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Необходимо настроить бюджеты в разделе "Управление".</p>';
+            } else {
+                budgetDiv.innerHTML = html;
+            }
+        }
+
+
+        function renderCharts(targetCurrency, monthlyData, categoryExpenses) {
             // --- 1. График чистого дохода за год (Линейный) ---
-            const monthlyData = getMonthlyNetBalance(targetCurrency);
             const now = new Date();
             const labels = [];
             const data = [];
@@ -528,22 +545,12 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: {
-                            beginAtZero: false,
-                            grid: { color: 'var(--border-color)' },
-                            ticks: { color: 'var(--text-secondary)' }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: 'var(--text-secondary)' }
-                        }
+                        y: { beginAtZero: false, grid: { color: 'var(--border-color)' }, ticks: { color: 'var(--text-primary)' } },
+                        x: { grid: { display: false }, ticks: { color: 'var(--text-primary)' } }
                     },
-                    plugins: {
-                        legend: { labels: { color: 'var(--text-primary)' } }
-                    }
+                    plugins: { legend: { labels: { color: 'var(--text-primary)' } } }
                 }
             });
-
 
             // --- 2. Расходы по категориям (Круговая диаграмма) ---
             const expenseLabels = Object.keys(categoryExpenses);
@@ -560,20 +567,13 @@
                     type: 'doughnut',
                     data: {
                         labels: expenseLabels,
-                        datasets: [{
-                            data: expenseData,
-                            backgroundColor: backgroundColors,
-                            hoverOffset: 4
-                        }]
+                        datasets: [{ data: expenseData, backgroundColor: backgroundColors, hoverOffset: 4 }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { 
-                                position: 'right',
-                                labels: { color: 'var(--text-primary)' }
-                            },
+                            legend: { position: 'right', labels: { color: 'var(--text-primary)' } },
                             title: {
                                 display: true,
                                 text: `Общая сумма: ${formatCurrency(totalExpenseSum, targetCurrency)}`,
@@ -622,19 +622,109 @@
             });
         }
         
+        // --- Рендеринг Журнала Транзакций ---
+        function renderTransactionHistory() {
+            const list = document.getElementById('transaction-history-list');
+            list.innerHTML = '';
+
+            // Сортировка по дате (самые новые сверху)
+            const sortedTransactions = [...state.transactions].sort((a, b) => b.timestamp - a.timestamp);
+            
+            // Отображаем только последние 20 для производительности
+            sortedTransactions.slice(0, 20).forEach(t => {
+                const account = state.accounts.find(a => a.id === t.accountId) || { name: 'Неизвестно', currency: '???' };
+                
+                let amountText = formatCurrency(t.amount, t.currency);
+                let description = t.description || (t.type === 'transfer' ? 'Перевод' : t.category);
+                
+                const date = new Date(t.timestamp).toLocaleDateString();
+                
+                if (t.type === 'transfer') {
+                     amountText = `Перевод ${amountText}`;
+                } else if (t.type === 'expense') {
+                     amountText = `- ${amountText}`;
+                } else if (t.type === 'income') {
+                     amountText = `+ ${amountText}`;
+                }
+
+                const li = document.createElement('li');
+                li.className = `transaction-item ${t.type}`;
+                li.innerHTML = `
+                    <div>
+                        <div style="font-weight: bold;">${description}</div>
+                        <div class="transaction-details">
+                            ${date} | Счет: ${account.name}
+                        </div>
+                    </div>
+                    <span class="transaction-amount">${amountText}</span>
+                `;
+                list.appendChild(li);
+            });
+
+            if (state.transactions.length === 0) {
+                 list.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Транзакций пока нет.</p>';
+            }
+        }
+        
+        // --- Управление Счетами и Бюджетами ---
+        
         function renderManageAccountList() {
              const list = document.getElementById('manage-account-list');
              list.innerHTML = '';
              
              state.accounts.forEach(account => {
                  const li = document.createElement('li');
-                 li.className = 'manage-account-item';
+                 li.className = 'manage-account-item account-item';
                  li.innerHTML = `
-                     <span>${account.name} (${account.currency})</span>
+                     <span>${account.name} (${account.currency}) - ${formatCurrency(account.balance, account.currency, true)}</span>
                      <button class="delete-btn" onclick="deleteAccount(${account.id})">Удалить</button>
                  `;
                  list.appendChild(li);
              });
+        }
+        
+        function renderManageBudgets() {
+            const container = document.getElementById('manage-budgets-list');
+            container.innerHTML = '';
+
+            const expenseCategories = ['Покупки', 'Еда', 'Коммунальные', 'Развлечения', 'Прочее'];
+
+            expenseCategories.forEach(category => {
+                const currentValue = state.budgets[category] || 0;
+                
+                const div = document.createElement('div');
+                div.className = 'account-item';
+                div.innerHTML = `
+                    <span>${category} (RUB)</span>
+                    <input type="number" 
+                           id="budget-${category}" 
+                           value="${currentValue.toFixed(0)}" 
+                           placeholder="0" 
+                           min="0"
+                           style="width: 120px; text-align: right; margin: 0;">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function saveBudgets() {
+            const expenseCategories = ['Покупки', 'Еда', 'Коммунальные', 'Развлечения', 'Прочее'];
+            const newBudgets = {};
+
+            expenseCategories.forEach(category => {
+                const input = document.getElementById(`budget-${category}`);
+                const value = parseFloat(input.value) || 0;
+                newBudgets[category] = value;
+            });
+
+            state.budgets = newBudgets;
+            saveState();
+            alert('Бюджеты сохранены!');
+            
+            // Если находимся в аналитике, обновим ее сразу
+            if (document.getElementById('analytics-view').style.display !== 'none') {
+                 renderAnalytics();
+            }
         }
 
         function renderAll() {
@@ -642,7 +732,6 @@
             renderTotalBalance();
         }
         
-        // --- Управление Счетами ---
         function addAccount() {
             const name = prompt("Введите название нового счета (например, 'Наличные в USD'):");
             if (!name) return;
@@ -687,17 +776,42 @@
             const modal = document.getElementById('transactionModal');
             modal.style.display = 'block';
 
+            // Принудительно сбросить поля
             document.getElementById('amount-input').value = '';
             document.getElementById('currency-input').value = 'RUB';
+            document.getElementById('description-input').value = '';
             
             const isTransfer = type === 'transfer';
             const isExpense = type === 'expense';
+            const isIncome = type === 'income';
             
+            // Логика отображения полей
             document.getElementById('transfer-target').style.display = isTransfer ? 'block' : 'none';
             document.getElementById('category-select-wrapper').style.display = isTransfer ? 'none' : 'block';
             
-            document.getElementById('category-select').disabled = !isExpense; 
-            document.getElementById('category-select').value = isExpense ? 'Покупки' : 'Зарплата';
+            // Настройка категорий
+            const categorySelect = document.getElementById('category-select');
+            categorySelect.disabled = isTransfer;
+            
+            // Фильтрация категорий в зависимости от типа
+            Array.from(categorySelect.options).forEach(option => {
+                const value = option.value;
+                const isExpenseCategory = ['Покупки', 'Еда', 'Коммунальные', 'Развлечения', 'Прочее'].includes(value);
+                const isIncomeCategory = value === 'Зарплата' || value === 'Прочее'; // Прочее может быть и доходом
+                
+                option.style.display = 'none';
+
+                if (isTransfer) {
+                     // Скрываем все, т.к. используется только для расхода/дохода
+                } else if (isExpense && isExpenseCategory) {
+                    option.style.display = 'block';
+                } else if (isIncome && !isExpenseCategory) {
+                    option.style.display = 'block';
+                }
+            });
+            
+            // Устанавливаем разумное значение по умолчанию
+            categorySelect.value = isExpense ? 'Покупки' : 'Зарплата';
 
             populateAccountSelects(type);
 
@@ -740,10 +854,11 @@
             const amount = parseFloat(document.getElementById('amount-input').value);
             const currency = document.getElementById('currency-input').value;
             const category = document.getElementById('category-select').value;
+            const description = document.getElementById('description-input').value.trim();
             const account = state.accounts.find(acc => acc.id === accountId);
 
             if (isNaN(amount) || amount <= 0 || !account) {
-                alert("Введите корректные данные.");
+                alert("Введите корректные данные (сумму и счет).");
                 return;
             }
 
@@ -754,7 +869,8 @@
                 amount: amount,
                 currency: currency,
                 accountId: accountId,
-                category: type === 'expense' ? category : (type === 'income' ? 'Доход' : 'Перевод'),
+                category: type === 'transfer' ? 'Перевод' : category,
+                description: description || (type === 'transfer' ? 'Перевод между счетами' : category),
                 timestamp: Date.now()
             };
             
@@ -771,22 +887,29 @@
                     return;
                 }
                 
+                // Дебет со счета отправителя
                 account.balance -= amountConvertedToAccountCurrency; 
                 
+                // Кредит на счет получателя
                 const amountConvertedToTargetCurrency = convertCurrency(amount, currency, targetAccount.currency);
                 targetAccount.balance += amountConvertedToTargetCurrency;
-                
-                transactionRecord = null;
             }
 
-            if (transactionRecord) {
-                 state.transactions.push(transactionRecord);
-            }
+            // Добавляем запись в историю только если это не сбой
+            state.transactions.push(transactionRecord);
 
             saveState();
             renderAll();
             closeModal();
-            alert(`Транзакция (${type}) успешно добавлена!`);
+            
+            // Если находимся во вкладке истории, обновим ее
+            if (document.getElementById('history-view').style.display !== 'none') {
+                renderTransactionHistory();
+            }
+            // Если находимся во вкладке аналитики, обновим ее
+            if (document.getElementById('analytics-view').style.display !== 'none') {
+                renderAnalytics();
+            }
         }
 
         function closeModal() {
@@ -796,8 +919,10 @@
 
         // --- Переключение Вкладок ---
         function showView(viewId, element) {
+            // Скрыть все контейнеры
             document.getElementById('main-view').style.display = 'none';
             document.getElementById('analytics-view').style.display = 'none';
+            document.getElementById('history-view').style.display = 'none';
             document.getElementById('manage-view').style.display = 'none';
             
             document.getElementById(viewId).style.display = 'block';
@@ -805,10 +930,14 @@
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             element.classList.add('active');
             
+            // Рендеринг данных для активной вкладки
             if (viewId === 'analytics-view') {
                 renderAnalytics();
             } else if (viewId === 'manage-view') {
                 renderManageAccountList();
+                renderManageBudgets();
+            } else if (viewId === 'history-view') {
+                renderTransactionHistory();
             } else {
                 renderAll();
             }
